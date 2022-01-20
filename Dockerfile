@@ -1,8 +1,10 @@
 FROM node:12-alpine
-WORKDIR /
-COPY package*.json ./
+WORKDIR /usr/src/app
+COPY package.json ./
 RUN yarn
-COPY . .
-RUN yarn start
+COPY . ./
+COPY ./src ./src
+COPY ./public ./public
+RUN yarn build
 EXPOSE 5000
-CMD ["node", "/server.js"]
+CMD ["yarn", "start"]
