@@ -7,7 +7,6 @@ const path = require("path");
 app.use(cors());
 const mqtt = require("mqtt");
 
-
 // result={"s":"2022-01-12T10:48:08.000Z","v":2,"u":"C","t":[{"c":"t","d":10,"t":5},{"c":"r","d":1},{"c":"g","d":1,"t":5,"g":"1.05"},{"c":"r","d":1},{"c":"u","d":15,"t":5,"s":1}]}
 
 const client = mqtt.connect(process.env.MQTT_ID);
@@ -19,16 +18,13 @@ client.on("connect", function () {
 });
 
 app.get("/mqtt", (req, res) => {
-  client.subscribe("presence", function (err) {
+  client.subscribe("brewpiless/silver", function (topic, message, err) {
     if (!err) {
       // client.publish("erik_test", req.query.temp);
       client.publish("brewpiless/silver/beerSet", req.query.temp);
     }
-  });
 
-  client.on("message", function (topic, message) {
-    console.log(message)
-    client.end();
+    console.log(message.toString())
   });
 
   res.send({
@@ -37,6 +33,17 @@ app.get("/mqtt", (req, res) => {
   });
   return;
 });
+
+
+// client.on('message', function (topic, message) {
+//   console.log(topic);
+//   console.log(message.toString());
+// });
+// client.subscribe("brewpiless", function (topic, message) {
+//   console.log(topic);
+//   console.log(message);
+//   // client.end();
+// });
 
 app.use(express.static("public"));
 
