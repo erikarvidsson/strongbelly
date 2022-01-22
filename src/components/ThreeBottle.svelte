@@ -11,7 +11,7 @@
 <canvas bind:this={el} />
 
 <style>
-  canvas {
+  /* canvas {
     background-color: blue;
-  }
+  } */
 </style>
