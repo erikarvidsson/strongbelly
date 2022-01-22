@@ -1,55 +1,64 @@
 const express = require("express");
 const app = express();
 require("dotenv").config();
-const port = process.env.PORT || 5000;
 const cors = require("cors");
-const path = require("path");
+const http = require("http");
 app.use(cors());
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+const path = require("path");
 const mqtt = require("mqtt");
+const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 
-// result={"s":"2022-01-12T10:48:08.000Z","v":2,"u":"C","t":[{"c":"t","d":10,"t":5},{"c":"r","d":1},{"c":"g","d":1,"t":5,"g":"1.05"},{"c":"r","d":1},{"c":"u","d":15,"t":5,"s":1}]}
+let firdgeValue = {};
 
-const client = mqtt.connect(process.env.MQTT_ID);
+const client = mqtt.connect("mqtt://100.117.236.107:1883", {
+  clientId,
+  clean: true,
+  connectTimeout: 10000,
+  username: process.env.MQTT_USERNAME,
+  password: process.env.MQTT_PAASSWORD,
+  reconnectPeriod: 1000,
+});
 
-client.options.username = process.env.MQTT_USERNAME;
-client.options.password = process.env.MQTT_PAASSWORD;
 client.on("connect", function () {
   console.log("Connection succeeded!");
 });
 
+client.stream.on("error", (err) => {
+  console.log("error", err);
+  client.end();
+});
 app.get("/mqtt", (req, res) => {
-  client.subscribe("brewpiless/silver", function (topic, message, err) {
+  // sendMqttMessage("brewpiless/silver/fridgeSet", req.query.temp);
+  client.subscribe("brewpiless/silver", function (err) {
     if (!err) {
-      // client.publish("erik_test", req.query.temp);
       client.publish("brewpiless/silver/beerSet", req.query.temp);
     }
-
-    console.log(message.toString())
+    console.log(err);
   });
-
-  res.send({
-    success: true,
-    data: [req.query.temp],
-  });
-  return;
 });
 
+client.on("message", function (topic, message) {
+  firdgeValue = message.toString();
+});
 
-// client.on('message', function (topic, message) {
-//   console.log(topic);
-//   console.log(message.toString());
-// });
-// client.subscribe("brewpiless", function (topic, message) {
-//   console.log(topic);
-//   console.log(message);
-//   // client.end();
-// });
+client.subscribe("brewpiless/silver/json", function (topic, message) {
+  console.log("Subscription successful");
+});
+
+io.on("connection", (socket) => {
+  setInterval(() => {
+    socket.emit("fridge", firdgeValue);
+  }, 2000);
+});
 
 app.use(express.static("public"));
-
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "public", "index.html"));
 });
-app.listen(port, () => {
-  console.log(`Server is up at port ${port}`);
+
+server.listen(5000, () => {
+  console.log("listening on *5000");
 });
