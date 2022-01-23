@@ -6,8 +6,6 @@ function connectMqtt() {
   global.client.options.username = process.env.MQTT_USERNAME;
   global.client.options.password = process.env.MQTT_PAASSWORD;
 
-  console.log("Hello from MQTT");
-
   client.on("connect", function () {
     console.log("Connection succeeded!");
   });

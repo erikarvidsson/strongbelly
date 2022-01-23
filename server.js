@@ -10,55 +10,80 @@ const io = new Server(server);
 const path = require("path");
 const mqtt = require("mqtt");
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
+let firdgeValues = {};
 
-let firdgeValue = {};
+let run = async () => {
+  function startMqtt() {
+    const client = mqtt.connect(process.env.MQTT_ID, {
+      clientId,
+      clean: true,
+      keepalive: 1,
+      username: process.env.MQTT_USERNAME,
+      password: process.env.MQTT_PAASSWORD,
+      reconnectPeriod: 1000,
+    });
 
-const client = mqtt.connect("mqtt://100.117.236.107:1883", {
-  clientId,
-  clean: true,
-  connectTimeout: 10000,
-  username: process.env.MQTT_USERNAME,
-  password: process.env.MQTT_PAASSWORD,
-  reconnectPeriod: 1000,
-});
+    client.on("connect", function () {
+      console.log("MQTT connection succeeded!");
+    });
 
-client.on("connect", function () {
-  console.log("Connection succeeded!");
-});
+    client.stream.on("error", (err) => {
+      console.log("error", err);
+      client.end();
+    });
 
-client.stream.on("error", (err) => {
-  console.log("error", err);
-  client.end();
-});
-app.get("/mqtt", (req, res) => {
-  // sendMqttMessage("brewpiless/silver/fridgeSet", req.query.temp);
-  client.subscribe("brewpiless/silver", function (err) {
-    if (!err) {
-      client.publish("brewpiless/silver/beerSet", req.query.temp);
+    // Get value from frontend to set fridge value
+    app.get("/mqtt", (req, res) => {
+      client.subscribe("brewpiless/silver", function (err) {
+        if (!err) {
+          client.publish("brewpiless/silver/beerSet", req.query.temp);
+        }
+        console.log(err);
+      });
+    });
+
+    // Get the message from subscription
+    client.on("message", function (topic, message) {
+      firdgeValues = message.toString();
+    });
+
+    // Subscribe to fridge data
+    client.subscribe("brewpiless/silver/json", function (topic, message) {
+      console.log("Subscription successful");
+    });
+
+    return client;
+  }
+
+  // Start and set mqtt client
+  let client = startMqtt();
+
+  io.on("connection", function (socket) {
+    console.log("a user connected");
+    // Restart mqtt sever if offline
+    if (socket.connected && !client.connected) {
+      client = startMqtt();
+      console.log("restart mqtt");
     }
-    console.log(err);
+
+    socket.on("disconnect", () => {
+      console.log("user disconnected");
+    });
+
+    // Live update fridge value
+    setInterval(() => {
+      socket.emit("fridge", firdgeValues);
+    }, 3000);
   });
-});
 
-client.on("message", function (topic, message) {
-  firdgeValue = message.toString();
-});
+  app.use(express.static("public"));
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "public", "index.html"));
+  });
 
-client.subscribe("brewpiless/silver/json", function (topic, message) {
-  console.log("Subscription successful");
-});
+  server.listen(5000, () => {
+    console.log("listening on *5000");
+  });
+};
 
-io.on("connection", (socket) => {
-  setInterval(() => {
-    socket.emit("fridge", firdgeValue);
-  }, 2000);
-});
-
-app.use(express.static("public"));
-app.get("*", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "public", "index.html"));
-});
-
-server.listen(5000, () => {
-  console.log("listening on *5000");
-});
+run();
