@@ -36,7 +36,7 @@ let run = async () => {
     app.get("/mqtt", (req, res) => {
       client.subscribe("brewpiless/silver", function (err) {
         if (!err) {
-          client.publish("brewpiless/silver/beerSet", req.query.temp);
+          client.publish("brewpiless/silver/fridgeSet", req.query.temp);
         }
         console.log(err);
       });
