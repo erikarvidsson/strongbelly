@@ -32,7 +32,7 @@ let run = async () => {
       client.end();
     });
 
-    // Get value from frontend to set fridge value
+    // Get value from frontend and set fridge value remote
     app.get("/mqtt", (req, res) => {
       client.subscribe("brewpiless/silver", function (err) {
         if (!err) {

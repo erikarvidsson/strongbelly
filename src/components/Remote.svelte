@@ -22,7 +22,7 @@
 
   async function setNewTempValue(e) {
     try {
-      await fetch(`/mqtt?temp=$ ${newSetTemp}`);
+      await fetch(`/mqtt?temp=${newSetTemp}`);
     } catch (error) {
       console.error(error);
     }

@@ -1,9 +1,8 @@
-<script context="module">
+<!-- <script context="module">
   import * as THREE from "three";
   import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-
-  const loader = new GLTFLoader();
+  import testModel from "./static/RobotExpressive.glb";
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(
@@ -16,16 +15,19 @@
   const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
   const cube = new THREE.Mesh(geometry, material);
   let renderer;
-  scene.add(camera);
-  scene.add(cube);
+  const loader = new GLTFLoader();
+  const [parrotData, flamingoData, storkData] = await Promise.all([
+    loader.loadAsync('/assets/models/Parrot.glb'),
+    loader.loadAsync('/assets/models/Flamingo.glb'),
+    loader.loadAsync('/assets/models/Stork.glb'),
+  ]);
   camera.position.z = 5;
   camera.position.z = 5;
 
-  const loadedData = loader.load(
-    // resource URL
-    "/static/soda_can/scene.gltf",
-    // called when the resource is loaded
+  loader.load(
+    testModel,
     function (gltf) {
+      console.log(gltf);
       scene.add(gltf.scene);
 
       gltf.animations; // Array<THREE.AnimationClip>
@@ -37,11 +39,13 @@
     // called while loading is progressing
     function (xhr) {
       console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      console.log(xhr);
     },
+
     // called when loading has errors
     function (error) {
-      console.log(error)
       console.log("An error happened");
+      console.log(error);
     }
   );
 
@@ -72,4 +76,4 @@
   };
 
   window.addEventListener("resize", resize);
-</script>
+</script> -->
