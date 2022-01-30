@@ -34,7 +34,7 @@
     <div class="temp">Fridge temp: {fridgeValues.fridgeTemp}</div>
     <div class="temp">Fridge goal temp: {fridgeValues.fridgeSet}</div>
     <input
-      type="text"
+      type="number"
       placeholder="Send temp to fridge"
       bind:value={newSetTemp}
     />
@@ -48,6 +48,12 @@
     padding: 1em;
     max-width: 240px;
     margin: 0 auto;
+  }
+  .temp {
+    margin: 0 0 4px;
+  }
+  .temp:nth-of-type(2) {
+    margin: 0 0 10px;
   }
 
   @media (min-width: 640px) {

@@ -18,6 +18,7 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "@google/model-viewer": "^1.10.1",
     "@influxdata/influxdb-client": "^1.22.0",
     "cors": "^2.8.5",
     "dotenv": "^12.0.4",
@@ -26,9 +27,6 @@
     "mqtt": "^4.3.4",
     "sirv-cli": "^2.0.0",
     "socket.io": "^4.4.1",
-    "socket.io-client": "^4.4.1",
-    "three": "^0.136.0",
-    "three-gltf-loader": "^1.111.0",
-    "three-orbitcontrols": "^2.110.3"
+    "socket.io-client": "^4.4.1"
   }
 }

@@ -1,16 +1,15 @@
 <script>
   import Remote from "./components/Remote.svelte";
-  // import ThreeBottle from "./components/ThreeBottle.svelte";
+  import ModelBottle from "./components/ModelBottle.svelte";
 </script>
 
 <main>
   <h1>StrongBelly</h1>
+  <ModelBottle />
   <Remote />
-  <!-- <ThreeBottle /> -->
 </main>
 
 <style>
-  
   h1 {
     color: #ff3e00;
     text-transform: uppercase;
