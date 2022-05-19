@@ -10,7 +10,13 @@ const io = new Server(server);
 const path = require("path");
 const mqtt = require("mqtt");
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
+let { InfluxDB } = require("@influxdata/influxdb-client");
 let firdgeValues = {};
+let influxArr = [];
+
+const token = process.env.INFLUXDB_TOKEN;
+const org = process.env.INFLUXDB_ORG;
+const url = process.env.INFLUXDB_URL;
 
 let run = async () => {
   function startMqtt() {
@@ -45,6 +51,7 @@ let run = async () => {
     // Get the message from subscription
     client.on("message", function (topic, message) {
       firdgeValues = message.toString();
+      io.emit("fridge", firdgeValues);
     });
 
     // Subscribe to fridge data
@@ -70,10 +77,8 @@ let run = async () => {
       console.log("user disconnected");
     });
 
-    // Live update fridge value
-    setInterval(() => {
-      socket.emit("fridge", firdgeValues);
-    }, 3000);
+    io.emit("fridge", firdgeValues);
+    io.emit("influxDB", influxArr);
   });
 
   app.use(express.static("public"));
@@ -81,9 +86,47 @@ let run = async () => {
     res.sendFile(path.resolve(__dirname, "public", "index.html"));
   });
 
-  server.listen(5000, () => {
+  server.listen(5001, () => {
     console.log("listening on *5000");
   });
+
+  let getDataInflux = (token, url, org) => {
+    const client = new InfluxDB({
+      url: url,
+      token: token,
+    });
+
+    const queryApi = client.getQueryApi(org);
+
+    const query = `from(bucket: "Hoeken")
+  |> range(start: -10080m)
+  |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
+  |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
+  |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
+  |> aggregateWindow(every: 7200s, fn: mean, createEmpty: false)
+  |> yield(name: "mean")`;
+
+    queryApi.queryRows(query, {
+      next(row, tableMeta) {
+        const o = tableMeta.toObject(row);
+        influxArr.push(o);
+        // console.log(
+        //   `${o._time} ${o._measurement} in ${o.location} (${o.example}): ${o._field}=${o._value}`
+        // );
+      },
+      error(error) {
+        console.error(error);
+        console.log("\\nFinished ERROR");
+      },
+      complete() {
+        console.log("\\nFinished SUCCESS");
+      },
+    });
+  };
+
+  getDataInflux(token, url, org);
 };
 
 run();
+
+// You can generate a Token from the "Tokens Tab" in the UI

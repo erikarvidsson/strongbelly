@@ -1,5 +1,7 @@
 <script>
   import Remote from "./components/Remote.svelte";
+  import Chart from "./components/Chart.svelte";
+  import InfluxGraph from "./components/InfluxGraph.svelte";
   import ModelBottle from "./components/ModelBottle.svelte";
 </script>
 
@@ -7,6 +9,8 @@
   <h1>StrongBelly</h1>
   <ModelBottle />
   <Remote />
+  <InfluxGraph />
+  <Chart />
 </main>
 
 <style>

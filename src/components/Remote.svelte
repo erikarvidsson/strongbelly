@@ -1,8 +1,12 @@
 <script>
   import { io } from "socket.io-client";
+  import { setContext } from "svelte";
+  import { graphValues } from "../store.js";
 
   let newSetTemp = "";
   let fridgeValues = { fridgeTemp: "connecting", fridgeSet: "connecting" };
+  let values = [];
+  let dates = [];
 
   const socket = io();
 
@@ -18,6 +22,25 @@
     } else {
       console.log("Somthing wrong with mqtt data response");
     }
+  });
+  socket.on("influxDB", (arg) => {
+    values = [];
+    dates = [];
+    arg.map((val) => {
+      if (fridgeValues.fridgeSet != val._value) {
+        values.push(val._value);
+        // dates.push(val._time);
+        dates.push(
+          `${
+            val._time.split("-")[1] +
+            "/" +
+            val._time.split("-")[2].split("T")[0]
+          }-${val._time.split("T")[1].split(":00Z")[0]}`
+        );
+      }
+    });
+    graphValues["values"] = values;
+    graphValues["dates"] = dates;
   });
 
   async function setNewTempValue(e) {
