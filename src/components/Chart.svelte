@@ -34,6 +34,9 @@
         });
       }
 
+      console.log(energyData);
+      console.log(energyData.flat());
+
       const ctx = document.getElementById("myChart").getContext("2d");
       const ctx2 = document.getElementById("myChart2").getContext("2d");
       var gradientFill = ctx.createLinearGradient(0, 0, 0, 290);
@@ -114,28 +117,28 @@
         data: {
           labels: [
             "IDLE",
-            "STATE_OFF",
-            "DOOR_OPEN",
+            //"STATE_OFF",
+            //"DOOR_OPEN",
             "HEATING",
             "COOLING",
             "WAITING_TO_COOL",
-            "WAITING_TO_HEAT",
-            "WAITING_FOR_PEAK_DETECT",
-            "COOLING_MIN_TIME",
-            "HEATING_MIN_TIME",
+            //"WAITING_TO_HEAT",
+            //"WAITING_FOR_PEAK_DETECT",
+            //"COOLING_MIN_TIME",
+            //"HEATING_MIN_TIME",
           ],
           datasets: [
             {
-              label: "Energy Type: ",
-              data: energyData,
+              label: ["HEATING"],
+              data: energyData.flat(),
               backgroundColor: [
                 "rgba(255, 99, 132, 1)",
+                "rgba(201, 203, 207, 1)",
+                "rgba(153, 102, 255, 1)",
                 "rgba(255, 159, 64, 1)",
                 "rgba(255, 205, 86, 1)",
                 "rgba(75, 192, 192, 1)",
                 "rgba(54, 162, 235, 1)",
-                "rgba(153, 102, 255, 1)",
-                "rgba(201, 203, 207, 1)",
                 "rgba(210,179,63, 1)",
                 "rgba(231,126,49, 1)",
                 "rgba(120,28,129, 1)",
@@ -211,27 +214,34 @@
 </main>
 
 <style>
-  div {
-    position: absolute;
-    display: inline;
-    max-width: 38%;
-    max-height: 500px;
-  }
   h1,
   h3 {
     width: 100%;
     text-align: center;
   }
-  .left {
-    left: 10%;
+  @media (min-width: 600px) {
+    div {
+      position: absolute;
+      display: inline;
+      max-width: 38%;
+      max-height: 500px;
+    }
+    .left {
+      left: 10%;
+    }
+    .right {
+      right: 10%;
+    }
+    #myChart {
+      position: relative;
+    }
+    #myChart2 {
+      position: relative;
+    }
   }
-  .right {
-    right: 10%;
-  }
-  #myChart {
-    position: relative;
-  }
-  #myChart2 {
-    position: relative;
+  @media (max-width: 600px) {
+    .right {
+      margin-top: 20px;
+    }
   }
 </style>
