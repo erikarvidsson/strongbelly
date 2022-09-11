@@ -12,7 +12,7 @@ const mqtt = require("mqtt");
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 let { InfluxDB } = require("@influxdata/influxdb-client");
 let firdgeValues = {};
-let influxArr = [];
+let influxArr = { 'energy': [], 'dates': [] }
 
 const token = process.env.INFLUXDB_TOKEN;
 const org = process.env.INFLUXDB_ORG;
@@ -78,7 +78,7 @@ let run = async () => {
     });
 
     io.emit("fridge", firdgeValues);
-    io.emit("influxDB", influxArr);
+    io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues });
   });
 
   app.use(express.static("public"));
@@ -98,21 +98,42 @@ let run = async () => {
 
     const queryApi = client.getQueryApi(org);
 
+    // Query for fridge temperature
     const query = `from(bucket: "Hoeken")
-  |> range(start: -10080m)
-  |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
-  |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
-  |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
-  |> aggregateWindow(every: 7200s, fn: mean, createEmpty: false)
-  |> yield(name: "mean")`;
+      |> range(start: -10080m)
+      |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
+      |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
+      |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
+      |> aggregateWindow(every: 7200s, fn: mean, createEmpty: false)
+      |> yield(name: "mean")`;
+
 
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
-        influxArr.push(o);
-        // console.log(
-        //   `${o._time} ${o._measurement} in ${o.location} (${o.example}): ${o._field}=${o._value}`
-        // );
+        influxArr.dates.push(o);
+      },
+      error(error) {
+        console.error(error);
+        console.log("\\nFinished ERROR");
+      },
+      complete() {
+        console.log("\\nFinished SUCCESS");
+      },
+    });
+
+    // Query for fridge energy consumption
+    const query2 = `from(bucket: "Hoeken")
+    |> range(start: -10080m)
+    |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
+    |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
+    |> filter(fn: (r) => r["_field"] == "state")
+    |> yield(name: "mean")`;
+
+    queryApi.queryRows(query2, {
+      next(row, tableMeta) {
+        const o = tableMeta.toObject(row);
+        influxArr.energy.push(o)
       },
       error(error) {
         console.error(error);
@@ -128,5 +149,3 @@ let run = async () => {
 };
 
 run();
-
-// You can generate a Token from the "Tokens Tab" in the UI
