@@ -205,7 +205,7 @@
   </div>
   <div class="right">
     <h1>Energy Consumption</h1>
-    <h3>Last 7 days 2 points per minute</h3>
+    <h3>Last 7 days, 30 second intervals</h3>
     <canvas id="myChart2" width="800" height="400" />
   </div>
 </main>
@@ -217,7 +217,8 @@
     max-width: 38%;
     max-height: 500px;
   }
-  h1,h3 {
+  h1,
+  h3 {
     width: 100%;
     text-align: center;
   }
