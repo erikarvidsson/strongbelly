@@ -78,43 +78,41 @@
           pointBackgroundColor: "rgba(173, 53, 186, 0.1)",
         },
         options: {
-          plugins: {
-            datalabels: {
-              display: false,
+          animations: {
+            tension: {
+              duration: 1000,
+              easing: "linear",
+              from: 1,
+              to: 0,
+              loop: true,
             },
           },
-          legend: {
-            display: false,
+          plugins: {
+            legend: {
+              display: false,
+              labels: {
+                color: "rgb(255, 99, 132)",
+              },
+            },
           },
-          animation: {
-            easing: "easeInOutQuad",
-            duration: 520,
+          scales: {
+            y: {
+              grid: {
+                gridLines: false,
+                display: false,
+                drawBorder: false,
+              },
+            },
+
+            x: {
+              grid: {
+                gridLines: false,
+                display: false,
+                drawBorder: false,
+              },
+              lineWidth: 0,
+            },
           },
-          // scales: {
-          // xAxes: [
-          //   {
-          //     display: false,
-          //     ticks: {
-          //       display: false,
-          //     },
-          //     gridLines: {
-          //       color: "rgba(200, 200, 200, 0.05)",
-          //       lineWidth: 1,
-          //     },
-          //   },
-          // ],
-          // yAxes: [
-          //   {
-          //     gridLines: {
-          //       color: "rgba(200, 200, 200, 0.08)",
-          //       lineWidth: 1,
-          //     },
-          //     ticks: {
-          //       display: false,
-          //     },
-          //   },
-          // ],
-          // },
           elements: {
             line: {
               tension: 0.4,
@@ -181,12 +179,43 @@
           pointBorderColor: "#fff",
         },
         options: {
-          legend: {
-            display: false,
+          animations: {
+            tension: {
+              duration: 1000,
+              easing: "linear",
+              from: 1,
+              to: 0,
+              loop: true,
+            },
           },
-          animation: {
-            easing: "easeInOutQuad",
-            duration: 520,
+          plugins: {
+            legend: {
+              display: false,
+              labels: {
+                color: "rgb(255, 99, 132)",
+              },
+            },
+          },
+          scales: {
+            y: {
+              grid: {
+                gridLines: false,
+                display: false,
+                drawBorder: false,
+              },
+            },
+
+            x: {
+              grid: {
+                gridLines: false,
+                display: false,
+                drawBorder: false,
+              },
+              lineWidth: 0,
+            },
+          },
+          tooltips: {
+            enabled: false,
           },
           elements: {
             line: {
@@ -210,32 +239,6 @@
           },
         },
       });
-
-      // if (arg.update) {
-      //   myChart.data.datasets[0].data = [...graphValues.values];
-      //   myChart2.data.datasets[0].data = [...energyData];
-      //   myChart2.update();
-      //   return;
-      // }
-
-      // myChart.data.datasets[0].data = [...graphValues.values];
-      // myChart2.data.datasets[0].data = [...energyData];
-      // myChart2.update();
-      // myChart.data.labels = graphValues.dates;
-      // myChart.update();
-      // myChart.options.plugins.legend = false;
-      // myChart2.data.labels = [
-      //   "IDLE",
-      //   "STATE_OFF",
-      //   "DOOR_OPEN",
-      //   "HEATING",
-      //   "COOLING",
-      //   "WAITING_TO_COOL",
-      //   "WAITING_TO_HEAT",
-      //   "WAITING_FOR_PEAK_DETECT",
-      //   "COOLING_MIN_TIME",
-      //   "HEATING_MIN_TIME",
-      // ];
     });
   });
 </script>
@@ -247,7 +250,7 @@
       Last {graphValues && graphValues.days ? graphValues.days : 7} days
     </h3>
     <!-- {#key rerender} -->
-    <canvas bind:this={rerender} id="myChart" width="800" height="400" />
+    <canvas bind:this={rerender} id="myChart" />
     <!-- {/key} -->
   </div>
   <div class="right">
@@ -258,7 +261,7 @@
         : 7} days, 30 second intervals
     </h3>
     <!-- {#key rerender} -->
-    <canvas id="myChart2" width="800" height="400" />
+    <canvas id="myChart2" />
     <!-- {/key} -->
   </div>
 </main>
@@ -269,29 +272,41 @@
     width: 100%;
     text-align: center;
   }
-  @media (min-width: 600px) {
+  canvas {
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 6px 10px 30px #cbcbe5;
+    margin: 0 7% 12%;
+    height: 800px;
+  }
+  @media (min-width: 900px) {
     div {
       position: absolute;
       display: inline;
       max-width: 38%;
-      max-height: 500px;
+      max-height: 800px;
     }
     .left {
       left: 10%;
+      width: 50%;
     }
     .right {
       right: 10%;
+      width: 50%;
     }
     #myChart {
       position: relative;
+      display: none;
     }
     #myChart2 {
       position: relative;
+      display: none;
     }
   }
-  @media (max-width: 600px) {
+  @media (max-width: 900px) {
     .right {
       margin-top: 20px;
+      padding-bottom: 80px;
     }
   }
 </style>
