@@ -155,10 +155,10 @@
             {
               label: ["HEATING"],
               data: [
-                energyData[0],
-                energyData[3],
-                energyData[4],
-                energyData[5],
+                energyData[0] / 2,
+                energyData[3] / 2,
+                energyData[4] / 2,
+                energyData[5] / 2,
               ],
               backgroundColor: [
                 "rgba(255, 99, 132, 1)",
@@ -258,7 +258,7 @@
     <h3>
       Last {graphValues != undefined && graphValues.days != undefined
         ? graphValues.days
-        : 7} days, 30 second intervals
+        : 7} days, minutes
     </h3>
     <!-- {#key rerender} -->
     <canvas id="myChart2" />
