@@ -20,7 +20,6 @@
 
     $socket.on("influxDB", async (arg) => {
       rerender++;
-      console.log(arg);
       values = [];
       dates = [];
       arg.flux.dates.map((val) => {
@@ -52,7 +51,6 @@
       }
 
       if (myChart != null) {
-        console.log(graphValues);
         myChart.destroy();
       }
       if (myChart2 != null) {

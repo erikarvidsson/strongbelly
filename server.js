@@ -17,8 +17,8 @@ let influxArr = { 'energy': [], 'dates': [] }
 const token = process.env.INFLUXDB_TOKEN;
 const org = process.env.INFLUXDB_ORG;
 const url = process.env.INFLUXDB_URL;
-
 let days = 7
+
 
 let run = async () => {
   function startMqtt() {
@@ -67,32 +67,80 @@ let run = async () => {
   // Start and set mqtt client
   let client = startMqtt();
 
-  io.on("connection", function (socket) {
+  io.on("connection", async (socket) => {
     console.log("a user connected");
     // Restart mqtt sever if offline
     if (socket.connected && !client.connected) {
       client = startMqtt();
       console.log("restart mqtt");
     }
+    io.emit("fridge", firdgeValues);
 
-    socket.on('statsDays', (val) => {
-      console.log(val)
-      days = val
-      setTimeout(() => {
-        getDataInflux(token, url, org);
-      }, 200);
-      setTimeout(() => {
-        io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues, update: true, 'days': days });
-      }, 4000);
-    })
     socket.on("disconnect", () => {
       console.log("user disconnected");
     });
 
-    io.emit("fridge", firdgeValues);
-    setTimeout(() => {
-      io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues, update: false, 'days': days });
-    }, 3000);
+    let getDataInflux = async (token, url, org) => {
+      influxArr = { 'energy': [], 'dates': [] }
+      const client = new InfluxDB({
+        url: url,
+        token: token,
+      });
+
+      const queryApi = client.getQueryApi(org);
+
+      const query = `from(bucket: "Hoeken")
+        |> range(start: -${1440 * days}m)
+        |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
+        |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
+        |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
+        |> aggregateWindow(every: 7200s, fn: mean, createEmpty: false)
+        |> yield(name: "mean")`;
+
+      const query2 = `from(bucket: "Hoeken")
+        |> range(start: -${1440 * days}m)
+        |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
+        |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
+        |> filter(fn: (r) => r["_field"] == "state")
+        |> yield(name: "mean")`;
+
+      await queryApi.queryRows(query, {
+        next(row, tableMeta) {
+          const o = tableMeta.toObject(row);
+          influxArr.dates.push(o);
+        },
+        error(error) {
+          console.error(error);
+          console.log("\\nFinished ERROR");
+        },
+        complete() {
+          console.log("\\nFinished 1 SUCCESS");
+
+        },
+      })
+
+      await queryApi.queryRows(query2, {
+        next(row, tableMeta) {
+          const o = tableMeta.toObject(row);
+          influxArr.energy.push(o)
+        },
+        error(error) {
+          console.error(error);
+          console.log("\\nFinished ERROR");
+        },
+        complete() {
+          console.log("\\nFinished 2 SUCCESS");
+          io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues, update: false, 'days': days });
+        },
+      });
+    };
+
+    getDataInflux(token, url, org, 7);
+
+    socket.on('statsDays', async (val) => {
+      days = val
+      getDataInflux(token, url, org)
+    })
   });
 
   app.use(express.static("public"));
@@ -104,63 +152,6 @@ let run = async () => {
     console.log("listening on *5000");
   });
 
-  let getDataInflux = (token, url, org) => {
-    influxArr = { 'energy': [], 'dates': [] }
-    const client = new InfluxDB({
-      url: url,
-      token: token,
-    });
-
-    const queryApi = client.getQueryApi(org);
-
-    // Query for fridge temperature
-    const query = `from(bucket: "Hoeken")
-      |> range(start: -${1440 * days}m)
-      |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
-      |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
-      |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
-      |> aggregateWindow(every: 7200s, fn: mean, createEmpty: false)
-      |> yield(name: "mean")`;
-
-
-    queryApi.queryRows(query, {
-      next(row, tableMeta) {
-        const o = tableMeta.toObject(row);
-        influxArr.dates.push(o);
-      },
-      error(error) {
-        console.error(error);
-        console.log("\\nFinished ERROR");
-      },
-      complete() {
-        console.log("\\nFinished SUCCESS");
-      },
-    });
-
-    // Query for fridge energy consumption
-    const query2 = `from(bucket: "Hoeken")
-    |> range(start: -${1440 * days}m)
-    |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
-    |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
-    |> filter(fn: (r) => r["_field"] == "state")
-    |> yield(name: "mean")`;
-
-    queryApi.queryRows(query2, {
-      next(row, tableMeta) {
-        const o = tableMeta.toObject(row);
-        influxArr.energy.push(o)
-      },
-      error(error) {
-        console.error(error);
-        console.log("\\nFinished ERROR");
-      },
-      complete() {
-        console.log("\\nFinished SUCCESS");
-      },
-    });
-  };
-
-  getDataInflux(token, url, org, 7);
 };
 
 run();
