@@ -18,6 +18,8 @@ const token = process.env.INFLUXDB_TOKEN;
 const org = process.env.INFLUXDB_ORG;
 const url = process.env.INFLUXDB_URL;
 
+let days = 7
+
 let run = async () => {
   function startMqtt() {
     const client = mqtt.connect(process.env.MQTT_ID, {
@@ -73,12 +75,24 @@ let run = async () => {
       console.log("restart mqtt");
     }
 
+    socket.on('statsDays', (val) => {
+      console.log(val)
+      days = val
+      setTimeout(() => {
+        getDataInflux(token, url, org);
+      }, 200);
+      setTimeout(() => {
+        io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues, update: true, 'days': days });
+      }, 4000);
+    })
     socket.on("disconnect", () => {
       console.log("user disconnected");
     });
 
     io.emit("fridge", firdgeValues);
-    io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues });
+    setTimeout(() => {
+      io.emit("influxDB", { 'flux': influxArr, 'fridgeValues': firdgeValues, update: false, 'days': days });
+    }, 3000);
   });
 
   app.use(express.static("public"));
@@ -91,6 +105,7 @@ let run = async () => {
   });
 
   let getDataInflux = (token, url, org) => {
+    influxArr = { 'energy': [], 'dates': [] }
     const client = new InfluxDB({
       url: url,
       token: token,
@@ -100,7 +115,7 @@ let run = async () => {
 
     // Query for fridge temperature
     const query = `from(bucket: "Hoeken")
-      |> range(start: -10080m)
+      |> range(start: -${1440 * days}m)
       |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
       |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
       |> filter(fn: (r) => r["_field"] == "fridgeSet" or r["_field"] == "fridgeTemp")
@@ -124,7 +139,7 @@ let run = async () => {
 
     // Query for fridge energy consumption
     const query2 = `from(bucket: "Hoeken")
-    |> range(start: -10080m)
+    |> range(start: -${1440 * days}m)
     |> filter(fn: (r) => r["_measurement"] == "mqtt_consumer")
     |> filter(fn: (r) => r["topic"] == "brewpiless/silver/json")
     |> filter(fn: (r) => r["_field"] == "state")
@@ -145,7 +160,7 @@ let run = async () => {
     });
   };
 
-  getDataInflux(token, url, org);
+  getDataInflux(token, url, org, 7);
 };
 
 run();

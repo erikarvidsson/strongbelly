@@ -3,30 +3,47 @@
   import { socket } from "../store.js";
   // import { graphValues } from "../store.js";
   import { onMount, getContext } from "svelte";
+  $: graphValues = [];
+  let rerender = 0;
 
   onMount(() => {
-    $socket.on("influxDB", (arg) => {
-      let graphValues = [];
-      let values = [];
-      let dates = [];
+    const ctx = document.getElementById("myChart").getContext("2d");
+    const ctx2 = document.getElementById("myChart2").getContext("2d");
+    var gradientFill = ctx.createLinearGradient(0, 0, 0, 290);
+    gradientFill.addColorStop(0, "rgb(255,181,10)");
+    gradientFill.addColorStop(1, "rgb(255,228,167)");
+    let values = [];
+    let dates = [];
+    let myChart;
+    let myChart2;
+    graphValues = [];
+
+    $socket.on("influxDB", async (arg) => {
+      rerender++;
+      console.log(arg);
+      values = [];
+      dates = [];
       arg.flux.dates.map((val) => {
-        if (arg.fridgeValues.fridgeSet != val._value) {
+        if (JSON.parse(arg.fridgeValues).fridgeSet != val._value) {
           values.push(val._value);
           dates.push(
             `${
               val._time.split("-")[1] +
               "/" +
               val._time.split("-")[2].split("T")[0]
-            }-${val._time.split("T")[1].split(":00Z")[0]}`
+            }H${val._time.split("T")[1].split(":")[0]}`
           );
         }
       });
+
       graphValues["values"] = values;
       graphValues["dates"] = dates;
       graphValues["energy"] = arg.flux.energy;
+      graphValues["days"] = arg.days;
       let energyData = [];
 
       if (graphValues.values != undefined) {
+        energyData = [];
         graphValues.energy.map((value) => {
           energyData[value["_value"]] && energyData[value["_value"]] > -1
             ? (energyData[value["_value"]] = energyData[value["_value"]] + 1)
@@ -34,17 +51,16 @@
         });
       }
 
-      console.log(energyData);
-      console.log(energyData.flat());
-
-      const ctx = document.getElementById("myChart").getContext("2d");
-      const ctx2 = document.getElementById("myChart2").getContext("2d");
-      var gradientFill = ctx.createLinearGradient(0, 0, 0, 290);
-      gradientFill.addColorStop(0, "rgb(255,181,10)");
-      gradientFill.addColorStop(1, "rgb(255,228,167)");
+      if (myChart != null) {
+        console.log(graphValues);
+        myChart.destroy();
+      }
+      if (myChart2 != null) {
+        myChart2.destroy();
+      }
 
       Chart.register(...registerables);
-      const myChart = new Chart(ctx, {
+      myChart = new Chart(ctx, {
         display: false,
         type: "bar",
         data: {
@@ -64,6 +80,11 @@
           pointBackgroundColor: "rgba(173, 53, 186, 0.1)",
         },
         options: {
+          plugins: {
+            datalabels: {
+              display: false,
+            },
+          },
           legend: {
             display: false,
           },
@@ -71,24 +92,31 @@
             easing: "easeInOutQuad",
             duration: 520,
           },
-          scales: {
-            xAxes: [
-              {
-                gridLines: {
-                  color: "rgba(200, 200, 200, 0.05)",
-                  lineWidth: 1,
-                },
-              },
-            ],
-            yAxes: [
-              {
-                gridLines: {
-                  color: "rgba(200, 200, 200, 0.08)",
-                  lineWidth: 1,
-                },
-              },
-            ],
-          },
+          // scales: {
+          // xAxes: [
+          //   {
+          //     display: false,
+          //     ticks: {
+          //       display: false,
+          //     },
+          //     gridLines: {
+          //       color: "rgba(200, 200, 200, 0.05)",
+          //       lineWidth: 1,
+          //     },
+          //   },
+          // ],
+          // yAxes: [
+          //   {
+          //     gridLines: {
+          //       color: "rgba(200, 200, 200, 0.08)",
+          //       lineWidth: 1,
+          //     },
+          //     ticks: {
+          //       display: false,
+          //     },
+          //   },
+          // ],
+          // },
           elements: {
             line: {
               tension: 0.4,
@@ -111,9 +139,9 @@
           },
         },
       });
-      const myChart2 = new Chart(ctx2, {
+      myChart2 = new Chart(ctx2, {
         display: false,
-        type: "pie",
+        type: "bar",
         data: {
           labels: [
             "IDLE",
@@ -130,7 +158,12 @@
           datasets: [
             {
               label: ["HEATING"],
-              data: energyData.flat(),
+              data: [
+                energyData[0],
+                energyData[3],
+                energyData[4],
+                energyData[5],
+              ],
               backgroundColor: [
                 "rgba(255, 99, 132, 1)",
                 "rgba(201, 203, 207, 1)",
@@ -179,9 +212,20 @@
           },
         },
       });
-      myChart.data.datasets[0].data = [...graphValues.values];
-      myChart.data.labels = graphValues.dates;
+
+      // if (arg.update) {
+      //   myChart.data.datasets[0].data = [...graphValues.values];
+      //   myChart2.data.datasets[0].data = [...energyData];
+      //   myChart2.update();
+      //   return;
+      // }
+
+      // myChart.data.datasets[0].data = [...graphValues.values];
       // myChart2.data.datasets[0].data = [...energyData];
+      // myChart2.update();
+      // myChart.data.labels = graphValues.dates;
+      // myChart.update();
+      // myChart.options.plugins.legend = false;
       // myChart2.data.labels = [
       //   "IDLE",
       //   "STATE_OFF",
@@ -194,8 +238,6 @@
       //   "COOLING_MIN_TIME",
       //   "HEATING_MIN_TIME",
       // ];
-      myChart.update();
-      // myChart2.update();
     });
   });
 </script>
@@ -203,13 +245,23 @@
 <main>
   <div class="left">
     <h1>Temperature</h1>
-    <h3>Last 7 days</h3>
-    <canvas id="myChart" width="800" height="400" />
+    <h3>
+      Last {graphValues && graphValues.days ? graphValues.days : 7} days
+    </h3>
+    <!-- {#key rerender} -->
+    <canvas bind:this={rerender} id="myChart" width="800" height="400" />
+    <!-- {/key} -->
   </div>
   <div class="right">
     <h1>Energy Consumption</h1>
-    <h3>Last 7 days, 30 second intervals</h3>
+    <h3>
+      Last {graphValues != undefined && graphValues.days != undefined
+        ? graphValues.days
+        : 7} days, 30 second intervals
+    </h3>
+    <!-- {#key rerender} -->
     <canvas id="myChart2" width="800" height="400" />
+    <!-- {/key} -->
   </div>
 </main>
 

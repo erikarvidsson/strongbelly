@@ -2,6 +2,7 @@
   import { socket } from "../store.js";
 
   let newSetTemp = "";
+  let statsDays = "";
   let fridgeValues = { fridgeTemp: "connecting", fridgeSet: "connecting" };
 
   $socket.on("connect", () => {
@@ -25,6 +26,9 @@
       console.error(error);
     }
   }
+  async function setNewDaysValue(e) {
+    $socket.emit("statsDays", statsDays);
+  }
 </script>
 
 <main>
@@ -37,6 +41,11 @@
       bind:value={newSetTemp}
     />
     <button on:click={setNewTempValue}>Send</button>
+  </div>
+  <div class="time">
+    <div class="temp">Time span</div>
+    <input type="number" placeholder="Days to charts" bind:value={statsDays} />
+    <button on:click={setNewDaysValue}>Send</button>
   </div>
 </main>
 
