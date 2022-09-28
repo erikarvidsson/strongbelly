@@ -22,7 +22,7 @@ let days = 7
 
 let run = async () => {
   function startMqtt() {
-    const client = mqtt.connect(process.env.MQTT_ID, {
+    let client = mqtt.connect(process.env.MQTT_ID, {
       clientId,
       clean: true,
       keepalive: 1,
@@ -41,12 +41,21 @@ let run = async () => {
     });
 
     // Get value from frontend and set fridge value remote
-    app.get("/mqtt", (req, res) => {
-      client.subscribe("brewpiless/silver", function (err) {
+    app.get("/mqtt", async (req, res) => {
+      await client.subscribe("brewpiless/silver", function async(err) {
+
+        // client = mqtt.connect(process.env.MQTT_ID, {
+        //   clientId,
+        //   clean: true,
+        //   keepalive: 1,
+        //   username: process.env.MQTT_USERNAME,
+        //   password: process.env.MQTT_PAASSWORD,
+        //   reconnectPeriod: 1000,
+        // });
         if (!err) {
           client.publish("brewpiless/silver/fridgeSet", req.query.temp);
         }
-        console.log(err);
+        console.log('error', err);
       });
     });
 
@@ -115,7 +124,6 @@ let run = async () => {
         },
         complete() {
           console.log("\\nFinished 1 SUCCESS");
-
         },
       })
 
@@ -135,7 +143,7 @@ let run = async () => {
       });
     };
 
-    getDataInflux(token, url, org, 7);
+    getDataInflux(token, url, org);
 
     socket.on('statsDays', async (val) => {
       days = val

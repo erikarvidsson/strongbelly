@@ -3,7 +3,23 @@
 
   let newSetTemp = "";
   let statsDays = "";
-  let fridgeValues = { fridgeTemp: "connecting", fridgeSet: "connecting" };
+  let fridgeValues = {
+    fridgeTemp: "connecting",
+    fridgeSet: "connecting",
+    fridgeStatus: "connecting",
+  };
+  let statusLabels = [
+    "IDLE",
+    "STATE_OFF",
+    "DOOR_OPEN",
+    "HEATING",
+    "COOLING",
+    "WAITING_TO_COOL",
+    "WAITING_TO_HEAT",
+    "WAITING_FOR_PEAK_DETECT",
+    "COOLING_MIN_TIME",
+    "HEATING_MIN_TIME",
+  ];
 
   $socket.on("connect", () => {
     if ($socket.connected) {
@@ -33,6 +49,7 @@
 
 <main>
   <div class="search-block">
+    <div class="temp">Fridge status: {statusLabels[fridgeValues.state]}</div>
     <div class="temp">Fridge temp: {fridgeValues.fridgeTemp}</div>
     <div class="temp">Fridge goal temp: {fridgeValues.fridgeSet}</div>
     <input
@@ -43,7 +60,7 @@
     <button on:click={setNewTempValue}>Send</button>
   </div>
   <div class="time">
-    <div class="temp">Time span</div>
+    <div class="temp">Chart time span</div>
     <input type="number" placeholder="Days to charts" bind:value={statsDays} />
     <button on:click={setNewDaysValue}>Send</button>
   </div>
